@@ -51,6 +51,26 @@ class SchedulerCmdLine:
                           help="List of fields to show")
         view_by_name.set_defaults(func=SchedulerCmdLine.view_by_name)
 
+        #Edit
+        edit = subparsers.add_parser("edit",
+                                     help="Edit a specific schedule")
+        edit.add_argument("id", help="Numeric id of the schedule")
+        edit.add_argument("-n", "--name", help="Change Name")
+        edit.add_argument("-l", "--label", help="Edit cluster label")
+
+        edit.add_argument("-u", "--no-catch-up", help="Edit no catch up")
+        edit.add_argument("-c", "--concurrency", help="Edit concurrency")
+
+        edit.add_argument("-s", "--start-time", help="Edit start time")
+        edit.add_argument("-e", "--end-time", help="Edit end time")
+        edit.add_argument("-z", "--time-zone", help="Edit time zone")
+
+        edit.add_argument("-f", "--frequency", help="Edit frequency")
+        edit.add_argument("-t", "--time-unit", help="Edit time unit")
+
+        edit.add_argument("-o", "--time-out", help="Edit time out")
+        edit.set_defaults(func=SchedulerCmdLine.edit)
+
         #Suspend
         suspend = subparsers.add_parser("suspend",
                                         help="Suspend a specific schedule")
@@ -146,6 +166,16 @@ class SchedulerCmdLine:
         return json.dumps(schedule.attributes, sort_keys=True, indent=4)
 
     @staticmethod
+    def edit(args):
+        schedule = Scheduler.find(args.id)
+        print schedule
+        opts = vars(args)
+        opts.pop('id')
+        opts.pop('func')
+        opts = dict((k, v) for k, v in opts.iteritems() if v is not None)
+        return json.dumps(schedule.edit(opts), sort_keys=True, indent=4)
+
+    @staticmethod
     def suspend(args):
         schedule = Scheduler.find(args.id)
         return json.dumps(schedule.suspend(), sort_keys=True, indent=4)
@@ -222,6 +252,11 @@ class Scheduler(Resource):
             if schedjson["schedules"]:
                 return Scheduler(schedjson["schedules"][0])
         return None
+
+    def edit(self, data):
+        conn = Qubole.agent()
+        print data
+        return conn.put(self.element_path(self.id), data)
 
     def suspend(self):
         conn = Qubole.agent()
